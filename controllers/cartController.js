@@ -10,14 +10,14 @@ export const addToCart = asyncHandler(async(req , res)=>{ // for auth buyers
     if(item.quantity<quantity){ // check quantity in stock first
          return res.status(400).json({success:false , message :"quantity does not available"})
     }
-    const cart = await Cart.findOneAndUpdate(
+    const cart = await Cart.findOneAndUpdate(  // find and update quantity
     { userId: req.user._id, "items.itemId": itemId },
     { 
         $inc: { "items.$.quantity": quantity } 
     },
     { new: true }
 )
-   if (cart) {
+   if (cart) {  // if cart exist and item in it 
     const updatedItem = cart.items.find(i => i.itemId.toString() === itemId.toString())
     if (updatedItem.quantity > item.quantity) {
         updatedItem.quantity = item.quantity // add available quantity only
@@ -25,7 +25,7 @@ export const addToCart = asyncHandler(async(req , res)=>{ // for auth buyers
         const updatedCart = await Cart.findOne({ userId: req.user._id }).populate("items.itemId")
         return res.status(200).json({ success: true, message: `available quantity only added (${item.quantity})`,data:updatedCart})
     }
-} else {
+} else { // if cart does not exist create new one and insert items with it's quantity
     await Cart.findOneAndUpdate(
         { userId: req.user._id },
         { 
@@ -75,7 +75,7 @@ export const mergeCart = asyncHandler (async(req ,res)=>{ // for guest that save
 })
 
 export const removeFromCart = asyncHandler(async(req ,res)=>{
-    const {itemId} = req.body
+    const {itemId} = req.params
     const userId = req.user._id
     let cart = await Cart.findByIdAndUpdate({userId} , 
         {$pull:{items:{itemId:itemId}}}
@@ -84,4 +84,13 @@ export const removeFromCart = asyncHandler(async(req ,res)=>{
         return res.status(404).json({ success: false, message: "Cart not found" })
     }
         return res.status(200).json({success: true,message: "Item removed from cart successfully",data: cart  })
+})
+
+export const getCart = asyncHandler(async (req, res )=>{
+    const userId = req.user.body
+    const cart =await Cart.findOne({userId}).populate("items.itemId")
+    if(!cart){
+         return res.status(200).json({success: true,  data: { userId: req.user._id, items: []}})
+    }
+      return res.status(200).json({success: true,  data: cart})
 })

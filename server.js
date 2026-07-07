@@ -5,7 +5,8 @@ import cors from "cors"
 import dotenv from "dotenv";
 import authRoutes from "./Routes/authRouter.js"
 import itemRoutes from "./Routes/itemsRouter.js"
-import { protect } from "./middlewares/authMiddleware.js";
+import { buyerOnly, protect } from "./middlewares/authMiddleware.js";
+import cartRoutes from "./Routes/cartRouter.js"
 import {createServer} from "http"
 import {Server} from "socket.io"
 dotenv.config();
@@ -40,6 +41,7 @@ app.use((req,res,next)=>{
 })
 app.use("/api/v1/auth",authRoutes)
 app.use("/api/v1/item",protect, itemRoutes)
+app.use("/api/v1/cart",protect,buyerOnly,cartRoutes)
 
 // not found path
 app.use((req, res) => {

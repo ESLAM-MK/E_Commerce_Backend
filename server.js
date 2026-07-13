@@ -1,16 +1,18 @@
+import dotenv from "dotenv";
+dotenv.config()
 import express from "express"
 import connectDb from "./config/db.js"
 import cookieParser from "cookie-parser"; 
 import cors from "cors"
-import dotenv from "dotenv";
 import authRoutes from "./Routes/authRouter.js"
 import itemRoutes from "./Routes/itemsRouter.js"
 import { buyerOnly, protect } from "./middlewares/authMiddleware.js";
 import cartRoutes from "./Routes/cartRouter.js"
+import orderRoutes from "./Routes/OrderRouter.js"
+import paymentRoutes from "./Routes/paymentRouter.js"
 import {createServer} from "http"
 import {Server} from "socket.io"
-dotenv.config();
-const app = express();
+const app = express()
 const httpServer = createServer(app)
 const corsOptions = {
     origin: process.env.FRONT_URL,
@@ -30,6 +32,14 @@ io.on("connection",(socket)=>{
 })
  
 connectDb()
+// app.use((req, res, next) => {
+//     res.setHeader('bypass-tunnel-reminder', 'true');
+//     next();
+// });
+app.use((req, res, next) => {
+    res.setHeader('ngrok-skip-browser-warning', 'true');
+    next();
+})
 app.use(cors(corsOptions))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -42,6 +52,8 @@ app.use((req,res,next)=>{
 app.use("/api/v1/auth",authRoutes)
 app.use("/api/v1/item",protect, itemRoutes)
 app.use("/api/v1/cart",protect,buyerOnly,cartRoutes)
+app.use("/api/v1/order",orderRoutes)
+app.use("api/v1/payments",paymentRoutes)
 
 // not found path
 app.use((req, res) => {

@@ -77,7 +77,7 @@ export const mergeCart = asyncHandler (async(req ,res)=>{ // for guest that save
 export const removeFromCart = asyncHandler(async(req ,res)=>{
     const {itemId} = req.params
     const userId = req.user._id
-    let cart = await Cart.findByIdAndUpdate({userId} , 
+    let cart = await Cart.findOneAndUpdate({userId} , 
         {$pull:{items:{itemId:itemId}}}
     ,{new:true}).populate("items.itemId")
     if(!cart){
@@ -87,7 +87,7 @@ export const removeFromCart = asyncHandler(async(req ,res)=>{
 })
 
 export const getCart = asyncHandler(async (req, res )=>{
-    const userId = req.user.body
+    const userId = req.user._id
     const cart =await Cart.findOne({userId}).populate("items.itemId")
     if(!cart){
          return res.status(200).json({success: true,  data: { userId: req.user._id, items: []}})

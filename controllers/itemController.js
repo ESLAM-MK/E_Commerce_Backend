@@ -1,6 +1,7 @@
 import Item from "../Models/Item.js"
 import Notification from "../Models/Notifications.js"
 import User from "../Models/user.js"
+import { SendNewItemNotifications } from "../services/notificationService.js"
 import notificationTemplete from "../utils/notificationTemplete.js"
 import asyncHandler from "express-async-handler"
 export const getItem = asyncHandler( async (req, res, next) => {
@@ -72,40 +73,19 @@ export const deleteItem = asyncHandler(async (req, res,next) => {
 })
 
 export const addItem =asyncHandler( async (req, res,next) => {
-    
         const { title, description, price, quantity, category } = req.body
         if (!title || !category || !price || !quantity) {
             return res.status(400).json({ success: false, message: "all fields are required" })
         }
         const imagesUrl = req.files ? req.files.map(f => f.path) : []
         const newItem = await Item.create({ title, description, price, quantity, category, images: imagesUrl, employee: req.user._id })
-        const buyers = await User.find({ role: "buyer" }).select("_id")
-        if (buyers && buyers.length > 0) {
-            const notificationsData = buyers.map(buyer => ({
-                    recipient: buyer._id,
-                    title: notificationTemplete.new_item.title,
-                    body: notificationTemplete.new_item.body(newItem.title),
-                    refModel: "Item",
-                    refId: newItem._id,
-                    type: "new_Item"
-                }))
-                const notificationsToSave = await Notification.insertMany(notificationsData)
-                buyers.forEach((buyer,index)=>{
-                    const newNotfication = notificationsToSave[index]
-                    req.io.to(`${buyer._id}`).emit("notification", {
-                        _id: newNotfication._id,
-                        type: newNotfication.type,
-                        title: newNotfication.title,
-                        body: newNotfication.body,
-                        refModel: newNotfication.refModel,
-                        refId: newNotfication.refId,
-                        isRead: false,
-                        createdAt: newNotfication.createdAt,
-                    })
-
-                })
-            }
-        return res.status(201).json({ success: true, message: "added successfully and notifications has been sent" })
+         res.status(201).json({ success: true, message: "added successfully",data: newItem})
+         setImmediate(()=>{
+            SendNewItemNotifications(newItem,req.io).catch((error)=>{
+                console.log("Background Notification Error",error)
+            })
+         })
+       
 })
 export const updateItem =asyncHandler( async (req, res,next) => {
    

@@ -6,34 +6,29 @@ import Order from "../Models/Order.js"
 import { createPaymobPayment } from "../services/paymobService.js"
 export const placeOrder = asyncHandler(async (req, res) => {
     const { city, street, phone, name, notes } = req.body
-    
     if (!city || !street || !phone || !name) {
         return res.status(400).json({ success: false, message: "shipping address is required" })
     }
-
     const cart = await Cart.findOne({ userId: req.user._id }).populate("items.itemId")
     if (!cart || cart.items.length === 0) {
         return res.status(400).json({ success: false, message: "cart is empty" })
     }
-
     const redlocks = cart.items.map(item => `locks:item:${item.itemId._id}`)
-    let lock;
-    let stockHeld = false;
-
+    let lock
+    let stockHeld = false
     try {
-        lock = await redlock.acquire(redlocks, 5000);
+        lock = await redlock.acquire(redlocks, 5000)
         for (const cartItem of cart.items) {
             if (cartItem.quantity > cartItem.itemId.quantity) {
                 return res.status(400).json({ success: false, message: "quantity not available" });
             }
         }
-
         for (const cartItem of cart.items) {
             await Item.findByIdAndUpdate(cartItem.itemId._id, {
                 $inc: { quantity: -cartItem.quantity }
             })
         }
-        stockHeld = true;
+        stockHeld = true
         const orderItems = cart.items.map(item => ({
             itemId: item.itemId._id,
             quantity: item.quantity,
@@ -51,18 +46,16 @@ export const placeOrder = asyncHandler(async (req, res) => {
             paymentStatus: 'Pending'
         });
 
-        const { iframeUrl, paymobOrderId } = await createPaymobPayment(newOrder, req.user);
+        const { iframeUrl, paymobOrderId } = await createPaymobPayment(newOrder, req.user)
         
-        newOrder.paymentInfo = { paymobId: paymobOrderId.toString() }
+        newOrder.paymentInfo = {paymobId: paymobOrderId.toString() }
         await newOrder.save()
-
         return res.status(200).json({
             success: true,
             message: "payment request has been created successfully",
             paymentUrl: iframeUrl,
             orderId: newOrder._id
-        });
-
+        })
     } catch (error) {
         console.error("Checkout Error:", error)
 

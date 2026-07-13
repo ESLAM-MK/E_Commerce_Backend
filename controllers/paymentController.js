@@ -3,6 +3,7 @@ import crypto from "crypto"
 import Order from "../Models/Order.js"
 import Cart from "../Models/Cart.js"
 import Item from "../Models/Item.js"
+import { sendNewOrderNotificationToAdmins } from "../services/notificationService.js"
 export const paymobWebhook = asyncHandler(async(req ,res)=>{
     const {obj} = req.body 
     if(!obj || !obj.order){ // check if object of request body is exist and have order
@@ -56,6 +57,11 @@ export const paymobWebhook = asyncHandler(async(req ,res)=>{
         order.orderStatus ="Placed"
         await order.save()
         await Cart.findOneAndUpdate({userId:order.userId},{items:[]}) // make cart of this user empty
+        setImmediate(()=>{
+            sendNewOrderNotificationToAdmins(order ,req.io).catch(err => {
+            console.error("Admin Order Notification Error:", err)
+        })
+        })
     }
    else if(!isSuccess && order.paymentStatus === "Pending"){ // handle failure of payment
         order.paymentStatus = 'Failed'

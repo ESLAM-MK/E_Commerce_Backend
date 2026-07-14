@@ -10,6 +10,7 @@ import { buyerOnly, protect } from "./middlewares/authMiddleware.js";
 import cartRoutes from "./Routes/cartRouter.js"
 import orderRoutes from "./Routes/OrderRouter.js"
 import paymentRoutes from "./Routes/paymentRouter.js"
+import notificationRoutes from "./Routes/notificationRouter.js"
 import {createServer} from "http"
 import {Server} from "socket.io"
 const app = express()
@@ -25,6 +26,9 @@ io.on("connection",(socket)=>{
     console.log(`Socket connected: ${socket.id}`);
     socket.on("join_user_room",(userId)=>{
         socket.join(userId)
+    })
+    socket.on("join_admin_room",(adminId)=>{
+        socket.join(adminId)
     })
     socket.on("disconnect",()=>{
         console.log(`disconnected ${socket.id}`)
@@ -53,8 +57,8 @@ app.use("/api/v1/auth",authRoutes)
 app.use("/api/v1/item",protect, itemRoutes)
 app.use("/api/v1/cart",protect,buyerOnly,cartRoutes)
 app.use("/api/v1/order",orderRoutes)
-app.use("api/v1/payments",paymentRoutes)
-
+app.use("/api/v1/payments",paymentRoutes)
+app.use("/api/v1/notifications",protect,notificationRoutes)
 // not found path
 app.use((req, res) => {
   res.status(404).json({ message: "Route not found" });
@@ -63,7 +67,7 @@ app.use((req, res) => {
 app.use((error,req, res ,next)=>{
     const statusCode = res.statusCode === 200 ? 500 : res.statusCode
     res.status(statusCode).json({success :false , message :error.message ,
-        stack: process.env.NODE_ENV === 'production' ? null : err.stack,
+        stack: process.env.NODE_ENV === 'production' ? null : error.stack,
     })
 })
 const PORT = process.env.PORT || 3000

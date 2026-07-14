@@ -49,7 +49,6 @@ export const sendNewOrderNotificationToAdmins = async(newOrder, io) => {
     try {
         const admins = await User.find({ role: "admin" }).select("_id")
         if (!admins || admins.length === 0) return
-
         const notificationsData = admins.map((admin) => ({
             recipient: admin._id,
             title: notificationTemplete.new_order.title,

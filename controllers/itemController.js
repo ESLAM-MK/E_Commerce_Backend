@@ -29,9 +29,9 @@ export const getAllItems = asyncHandler(async (req, res,next) => {
         if (lte) finalFilter.price.$lte = Number(lte);
         if (gt) finalFilter.price.$gt = Number(gt);
         if (lt) finalFilter.price.$lt = Number(lt);
-
-        const page = parseInt(req.query.page, 10) || 1; 
-        const limit = parseInt(req.query.limit, 10) || 10;
+            
+        const page = parseInt(req.query.page, 10) || 1
+        const limit = parseInt(req.query.limit, 10) || 10
         const skip = (page - 1) * limit;
 
         const totalItems = await Item.countDocuments(finalFilter);

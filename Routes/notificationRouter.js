@@ -5,3 +5,5 @@ router.get('/' ,myNotifications)
 router.patch('/:id/read' ,markAsRead)
 router.patch('/read-all' ,markAllAsRead)
 router.delete('/:id' ,deleteNotification)
+
+export default router

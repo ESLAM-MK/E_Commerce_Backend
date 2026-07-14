@@ -1,24 +1,30 @@
 import asyncHandler from "express-async-handler"
 import Notification from "../Models/Notifications.js"
 export const myNotifications = asyncHandler(async (req, res) => {
-    const { unReaded } = req.query
+    const { isRead } = req.query
     const page = Number(req.query.page) || 1
     const limit = Number(req.query.limit) || 10
     const skip = (page - 1) * limit
     const query = { recipient: req.user._id }
-    if (unReaded === "true") query.isRead = false
-    const { notifications, totalNotifications, unReadedNotifications } = await Promise.all(
-        Notification.find(query).sort({ createAt: -1 }).skip(skip).limit(limit),
-        Notification.countDocuments(query),
-        Notification.countDocuments({ recipient: req.user._id, isRead = false })
-    )
+    if (isRead === "false") {
+        query.isRead = false
+    }else if (isRead === "true"){
+        query.isRead = true
+    }else{
+        query
+    }
+    const [ QueryNotifications, totalNotifications,queryCount] = await Promise.all([
+        Notification.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit),
+        Notification.countDocuments({ recipient: req.user._id}),
+         Notification.countDocuments(query)
+    ])
     const pages = Math.ceil(totalNotifications / limit)
     return res.status(200).json({
-        notifications:notifications,
-        unReadedCount:unReadedNotifications,
+        QueryNotifications:QueryNotifications,
         totalPages: pages,
         currentPage:page,
-        totalNotifications :totalNotifications
+        allNotificationsCount :totalNotifications,
+        queryCount:queryCount
     })
 }) 
 

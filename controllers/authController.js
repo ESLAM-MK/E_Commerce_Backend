@@ -1,6 +1,7 @@
 import User from "../Models/user.js"
 import jwt from "jsonwebtoken"
 import { generateRefreshToken, generateToken } from "../utils/generateTokens.js"
+import { sendEmail } from "../services/mailServices.js"
 const isProduction =process.env.NODE_ENV !== "development"
 export const refreshToken = async (req , res )=>{
 try {
@@ -114,5 +115,44 @@ export const userLogout = async (req,res)=>{
         res.status(200).json({ success: true, data: null, message: "Logged out successfully" });
     } catch (error) {
          res.status(500).json({ success: false, message: error.message });
+    }
+}
+export const forgetPassword =async(req, res)=>{
+    try {
+        const {email} = req.body 
+        const user = await User.findOne({email})
+        if(!user){
+             return res.status(404).json({success : false , message: "User Not Found"})
+        }
+        const otp = Math.floor(100000 + Math.random() * 900000).toString()
+        user.resetOTP = otp
+        user.resetOTPExpire = Date.now() + 10 * 60 * 1000 // 10 minutes
+        await user.save()
+        await sendEmail({ to: user.email, subject: "Password Reset OTP", otp})
+        return res.status(200).json({success : true , message: "OTP sent Successfully" ,data: null})
+    } catch (error) {
+             res.status(500).json({ success: false, message: error.message });
+    }
+}
+
+export const resetPassword =async(req, res)=>{
+    try {
+        const {email ,otp ,newPassword } = req.body 
+        const user = await User.findOne({email})
+        if(!user){
+             return res.status(404).json({ success: false, message: "User not found" });
+        }
+        const isOtpValid = user.resetOTP && user.resetOTP === String(otp).trim()
+        const isNotExpired = user.resetOTPExpire && user.resetOTPExpire > Date.now()
+        if(!isOtpValid || !isNotExpired){
+                 return res.status(404).json({ success: false, message: "Invalid or Expired OTP" });
+        }
+        user.password = newPassword
+        user.resetOTP =undefined
+        user.resetOTPExpire = undefined
+        await user.save()
+        return res.status(200).json({success : true , message: "Password reset successfully", data: null})
+    } catch (error) {
+             res.status(500).json({ success: false, message: error.message });
     }
 }

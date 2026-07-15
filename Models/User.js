@@ -35,6 +35,8 @@ const userSchema = new mongoose.Schema({
     },
     // Auth
     refreshToken: { type: String },
+    resetOTP: {type: String},
+    resetOTPExpire:{type: Date},
 
 }, { timestamps: true },)
 userSchema.pre("save", async function () {

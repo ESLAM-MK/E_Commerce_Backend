@@ -94,7 +94,7 @@ export const userLogin = async (req , res)=>{
         const refreshToken = generateRefreshToken(res, user._id)
         user.refreshToken = refreshToken
         await user.save()
-          return res.status(200).json({success : true , message: "Logged in successfully", user: { id: user._id, name: user.name, email: user.email }})
+          return res.status(200).json({success : true , message: "Logged in successfully", data: { user, token }})
     }catch(error){
           return res.status(404).json({success : false , message: error.message})
     }
